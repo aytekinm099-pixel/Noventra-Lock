@@ -74,48 +74,82 @@ async function master(a){
   return m;
 }
 async function holderData(a){
-  let all=[],limit=1000;
-  for(let p=0;p<2;p++){
-    let d=await api(API+"/jetton/wallets?jetton_master="+encodeURIComponent(a)+"&exclude_zero_balance=true&sort=desc&limit="+limit+"&offset="+p*limit),
-        b=d?.jetton_wallets||[];
-    all.push(...b);
-    if(b.length<limit)break;
+  // TON Center v3 expects the Jetton Master filter as `jetton_address`.
+  // Using `jetton_master` is not a documented filter and can return unrelated
+  // wallets, which makes holder concentration exceed 100%.
+  const limit=1000;
+  const url=API+"/jetton/wallets?jetton_address="+encodeURIComponent(a)+
+            "&exclude_zero_balance=true&sort=desc&limit="+limit+"&offset=0";
+  const d=await api(url);
+  const rows=Array.isArray(d?.jetton_wallets)?d.jetton_wallets:[];
+  const map=new Map();
+
+  for(const x of rows){
+    const key=String(x?.owner||x?.owner_address||x?.address||"").trim();
+    const balance=String(x?.balance??x?.amount??"0");
+    if(!key) continue;
+
+    const old=map.get(key);
+    if(!old){
+      map.set(key,{...x,balance});
+    }else{
+      try{
+        if(BigInt(balance)>BigInt(old.balance||0)) map.set(key,{...x,balance});
+      }catch{}
+    }
   }
-  let map=new Map();for(let x of all){let k=String(x.address||x.wallet_address||x.owner_address||x.owner||"").trim(),v=String(x.balance??x.amount??"0");if(!k)continue;let old=map.get(k);if(!old)map.set(k,{...x,balance:v});else try{if(BigInt(v)>BigInt(old.balance||0))map.set(k,{...x,balance:v})}catch{}}return [...map.values()].filter(x=>{try{return BigInt(x.balance||0)>0n}catch{return false}})}
+
+  return [...map.values()].filter(x=>{
+    try{return BigInt(x?.balance??0)>0n}catch{return false}
+  });
+}
 function analysis(rows,total){
   const input=Array.isArray(rows)?rows:[];
   const s=[...input].sort((a,b)=>{
     try{
-      const A=BigInt(a?.balance??0),B=BigInt(b?.balance??0);
+      const A=BigInt(a?.balance??0), B=BigInt(b?.balance??0);
       return B>A?-1:B<A?1:0;
     }catch{return 0}
   });
+
   let ts=0n;
   try{ts=BigInt(total??0)}catch{}
-  const sum=n=>{
+
+  const sumRaw=n=>{
     let z=0n;
     for(const x of s.slice(0,n)){
       try{z+=BigInt(x?.balance??0)}catch{}
     }
-    return ts?Number(z)/Number(ts):0;
+    return z;
   };
-  let an=0n;
-  for(const x of s){
-    try{an+=BigInt(x?.balance??0)}catch{}
-  }
-  const cov=ts?Number(an)/Number(ts):0;
+
+  const analyzedRaw=s.reduce((z,x)=>{
+    try{return z+BigInt(x?.balance??0)}catch{return z}
+  },0n);
+
+  // Keep ratios in BigInt space until the final display conversion.
+  const ratio=(raw)=>{
+    if(!ts || ts<=0n) return null;
+    return Number(raw*10000n/ts)/10000;
+  };
+
+  const analyzedRatio=ratio(analyzedRaw);
+  const invalidSupply=Boolean(ts>0n && analyzedRaw > ts + (ts/200n)); // >0.5% over supply
+
   return {
     rows:s,
     count:s.length,
-    top1:sum(1),
-    top5:sum(5),
-    top10:sum(10),
-    top20:sum(20),
-    top50:sum(50),
-    coverage:cov,
-    quality:!ts?"UNKNOWN":cov>1.005?"CHECK":cov<.45&&s.length>=1000?"PARTIAL":"GOOD"
+    top1:ratio(sumRaw(1)),
+    top5:ratio(sumRaw(5)),
+    top10:ratio(sumRaw(10)),
+    top20:ratio(sumRaw(20)),
+    top50:ratio(sumRaw(50)),
+    coverage:analyzedRatio,
+    invalidSupply,
+    quality:!ts?"UNKNOWN":invalidSupply?"CHECK":(s.length>=1000?"PARTIAL":"GOOD")
   };
 }
+
 function conc(h){return h.top10>=.7||h.top1>=.4?"critical":h.top10>=.5||h.top1>=.25?"high":h.top10>=.3||h.top1>=.12?"medium":"low"}function zeroAdmin(a){return !a||/^0+$/.test(String(a).replace(/:/g,"").trim())}function isMint(v){return v===true||v===1||v===-1||String(v).toLowerCase()==="true"||String(v)==="-1"}
 async function lockCheck(){return{status:t("lock"),badge:t("proof"),type:"gray",description:t("lockDesc"),locker:t("not"),amount:t("not"),unlock:t("not"),proof:t("required")}}
 function security(m,h,l){let s=50;s+=isMint(m.mintable)?-18:18;s+=zeroAdmin(m.admin_address)?14:-8;let c=conc(h);s+=c==="low"?12:c==="medium"?2:c==="high"?-10:-18;if(h.quality==="CHECK")s-=12;if(h.quality==="PARTIAL")s-=4;s+=l.type==="green"?22:-5;return Math.max(0,Math.min(100,Math.round(s)))}
