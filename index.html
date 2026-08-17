@@ -82,7 +82,40 @@ async function holderData(a){
     if(b.length<limit)break;
   }
   let map=new Map();for(let x of all){let k=String(x.address||x.wallet_address||x.owner_address||x.owner||"").trim(),v=String(x.balance??x.amount??"0");if(!k)continue;let old=map.get(k);if(!old)map.set(k,{...x,balance:v});else try{if(BigInt(v)>BigInt(old.balance||0))map.set(k,{...x,balance:v})}catch{}}return [...map.values()].filter(x=>{try{return BigInt(x.balance||0)>0n}catch{return false}})}
-function analysis(rows,total){let s=[...rows].sort((a,b)=>{try{let A=BigInt(a.balance||0),B=BigInt(b.balance||0);return B>A?-1:B<A?1:0}catch{return 0}}),ts=0n;try{ts=BigInt(total||0)}catch{};let sum=n=>{let z=0n;for(let x of s.slice(0,n))try{z+=BigInt(x.balance||0)}catch{}return ts?Number(z)/Number(ts):0},an=0n;for(let x of s)try{an+=BigInt(x.balance||0)}catch{};let cov=ts?Number(an)/Number(ts):0;return{rows:s,count:s.length,top1:sum(1),top5:sum(5),top10:sum(10),top20:sum(20),top50:sum(50),coverage:cov,quality:!ts?"UNKNOWN":cov>1.005?"CHECK":cov<.45&&s.length>=1000?"PARTIAL":"GOOD"}}
+function analysis(rows,total){
+  const input=Array.isArray(rows)?rows:[];
+  const s=[...input].sort((a,b)=>{
+    try{
+      const A=BigInt(a?.balance??0),B=BigInt(b?.balance??0);
+      return B>A?-1:B<A?1:0;
+    }catch{return 0}
+  });
+  let ts=0n;
+  try{ts=BigInt(total??0)}catch{}
+  const sum=n=>{
+    let z=0n;
+    for(const x of s.slice(0,n)){
+      try{z+=BigInt(x?.balance??0)}catch{}
+    }
+    return ts?Number(z)/Number(ts):0;
+  };
+  let an=0n;
+  for(const x of s){
+    try{an+=BigInt(x?.balance??0)}catch{}
+  }
+  const cov=ts?Number(an)/Number(ts):0;
+  return {
+    rows:s,
+    count:s.length,
+    top1:sum(1),
+    top5:sum(5),
+    top10:sum(10),
+    top20:sum(20),
+    top50:sum(50),
+    coverage:cov,
+    quality:!ts?"UNKNOWN":cov>1.005?"CHECK":cov<.45&&s.length>=1000?"PARTIAL":"GOOD"
+  };
+}
 function conc(h){return h.top10>=.7||h.top1>=.4?"critical":h.top10>=.5||h.top1>=.25?"high":h.top10>=.3||h.top1>=.12?"medium":"low"}function zeroAdmin(a){return !a||/^0+$/.test(String(a).replace(/:/g,"").trim())}function isMint(v){return v===true||v===1||v===-1||String(v).toLowerCase()==="true"||String(v)==="-1"}
 async function lockCheck(){return{status:t("lock"),badge:t("proof"),type:"gray",description:t("lockDesc"),locker:t("not"),amount:t("not"),unlock:t("not"),proof:t("required")}}
 function security(m,h,l){let s=50;s+=isMint(m.mintable)?-18:18;s+=zeroAdmin(m.admin_address)?14:-8;let c=conc(h);s+=c==="low"?12:c==="medium"?2:c==="high"?-10:-18;if(h.quality==="CHECK")s-=12;if(h.quality==="PARTIAL")s-=4;s+=l.type==="green"?22:-5;return Math.max(0,Math.min(100,Math.round(s)))}
@@ -92,7 +125,41 @@ function icon(m){let x=m.image||m.metadata?.image||m.jetton_content?.image||"";$
 function render(m,h,l){let a=m.address||"",meta=m.__meta||{},n=m.name||meta.name||m.metadata?.name||m.jetton_content?.name||m.symbol||"TON JETTON",s=m.symbol||meta.symbol||m.metadata?.symbol||m.jetton_content?.symbol||"JETTON",d=Number(m.decimals??meta.decimals??m.metadata?.decimals??9),total=m.total_supply??"0",mi=isMint(m.mintable),ad=m.admin_address||"";$("name").textContent=n;$("symbol").textContent=s;$("nameCard").textContent=n;$("symbolCard").textContent=s;$("resultAddress").textContent=a;$("master").textContent=short(a);$("supply").textContent=amount(total,d);$("mint").textContent=mi?"ACTIVE":"DISABLED";$("admin").textContent=ad?short(ad):"None";$("decimals").textContent=d;$("mintDetail").textContent=mi?"YES":"NO";$("adminDetail").textContent=ad?short(ad):"None";$("code").textContent=short(m.code_hash||"--");icon(m);$("lockStatus").textContent=l.status;$("lockBadge").textContent="● "+l.badge;$("lockDesc").textContent=l.description;$("locker").textContent=l.locker;$("amount").textContent=l.amount;$("unlock").textContent=l.unlock;$("proof").textContent=l.proof;renderScore(security(m,h,l));let lv=conc(h);$("top1").textContent=percent(h.top1);$("top5").textContent=percent(h.top5);$("top10").textContent=percent(h.top10);$("top20").textContent=percent(h.top20);$("top50").textContent=percent(h.top50);$("coverage").textContent=percent(h.coverage);$("quality").textContent=h.quality;$("nonzero").textContent=num(h.count);$("holderCount").textContent=num(h.count);$("concBar").style.width=Math.min(100,h.top10*100)+"%";$("concText").textContent=t(lv);$("qualityText").textContent=t(h.quality==="GOOD"?"good":h.quality==="PARTIAL"?"partial":h.quality==="CHECK"?"check":"unknown");$("rows").innerHTML=h.rows.slice(0,25).map((x,i)=>{let sh=0;try{sh=Number(BigInt(x.balance||0))/Number(BigInt(total||0))}catch{}return'<div class="row"><span>'+(i+1)+'</span><span class="owner">'+short(x.owner_address||x.owner||x.address)+'</span><span class="right">'+amount(x.balance,d)+'</span><span class="right">'+percent(sh)+'</span></div>'}).join("");$("risks").innerHTML=risks(m,h,l).map(x=>'<li><i class="rdot '+x.c+'"></i><span>'+x.x+'</span></li>').join("");let e=encodeURIComponent(a);$("links").innerHTML='<a target="_blank" href="https://tonviewer.com/'+e+'">Tonviewer ↗</a><a target="_blank" href="https://tonscan.org/jetton/'+e+'">Tonscan ↗</a><a target="_blank" href="https://tonraffles.app/lock">Ton Raffles ↗</a><a target="_blank" href="https://dedust.io">DeDust ↗</a><a target="_blank" href="https://ston.fi">STON.fi ↗</a>';$("result").classList.add("show");last={m,h,l};save(a,n,s)}
 function save(a,n,s){try{let x=JSON.parse(localStorage.getItem(HKEY)||"[]").filter(v=>v.a!==a);x.unshift({a,n,s});localStorage.setItem(HKEY,JSON.stringify(x.slice(0,8)));history()}catch{}}
 function history(){try{let x=JSON.parse(localStorage.getItem(HKEY)||"[]");if(!x.length)return;$("history").style.display="block";$("historyList").innerHTML=x.map(v=>'<span class="history-item" data-a="'+v.a+'">'+(v.s||"JETTON")+" · "+short(v.a)+"</span>").join("");document.querySelectorAll(".history-item").forEach(e=>e.onclick=()=>{$("address").value=e.dataset.a;scan()})}catch{}}
-async function scan(){clear();$("result").classList.remove("show");let a=$("address").value.trim();if(!a){error(t("enter"));return}$("scan").disabled=true;try{stat(t("ready"));load(t("id"));let m=await master(a);if(!m)throw Error(t("bad"));stat((m.name||m.symbol||"Jetton")+" · "+t("id"));load(t("holders"));let h=await holderData(m.address||a);load(t("lock"));let l=await lockCheck();render(m,h,l);stat(t("done"))}catch(e){console.error(e);error(e.message||t("failed"));stat(t("failed"))}finally{stop();$("scan").disabled=false}}
+async function scan(){
+  clear();
+  $("result").classList.remove("show");
+  let a=$("address").value.trim();
+  if(!a){error(t("enter"));return}
+  $("scan").disabled=true;
+  try{
+    stat(t("ready"));
+    load(t("id"));
+    let m=await master(a);
+    if(!m) throw Error(t("bad"));
+
+    stat((m.name||m.symbol||"Jetton")+" · "+t("id"));
+    load(t("holders"));
+
+    // holderData() returns the raw wallet array.
+    // analysis() converts that array into the V3 holder intelligence object.
+    const rows=await holderData(m.address||a);
+    const total=m.total_supply??"0";
+    const h=analysis(rows,total);
+
+    load(t("lock"));
+    const l=await lockCheck();
+
+    render(m,h,l);
+    stat(t("done"));
+  }catch(e){
+    console.error("Noventra Lock V3:",e);
+    error(e?.message||t("failed"));
+    stat(t("failed"));
+  }finally{
+    stop();
+    $("scan").disabled=false;
+  }
+}
 $("scan").onclick=scan;$("address").onkeydown=e=>{if(e.key==="Enter")scan()};$("copy").onclick=async()=>{try{await navigator.clipboard.writeText($("resultAddress").textContent);$("copy").textContent=lang==="tr"?"KOPYALANDI":"COPIED";setTimeout(()=>{$("copy").textContent=lang==="tr"?"KOPYALA":"COPY"},1300)}catch{}};$("lang").onclick=()=>{lang=lang==="en"?"tr":"en";localStorage.setItem(LKEY,lang);if(last)render(last.m,last.h,last.l);stat(t("ready"))};
 try{new TON_CONNECT_UI.TonConnectUI({manifestUrl:"https://getnoventra.org/tonconnect-manifest.json",buttonRootId:"ton-connect"})}catch(e){}stat(t("ready"));history();
 </script></body></html>
