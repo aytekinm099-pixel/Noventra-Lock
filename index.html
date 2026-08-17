@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#05080e">
-<meta name="description" content="Noventra Lock Premium V4 — TON Jetton identity, top 10 holder intelligence and DeDust market data.">
+<meta name="description" content="Noventra Lock Premium V4 — TON Jetton identity, top 10 holder intelligence and market data.">
 <title>Noventra Lock · Premium V4</title>
 
 <style>
@@ -89,11 +89,12 @@ a{text-decoration:none;color:inherit}
 .row:last-child{border-bottom:0}
 .row.head{color:#60778d;font-size:8px;text-transform:uppercase;letter-spacing:.8px;background:#08131d}
 .row code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c6d7e5}
+.owner-name{color:var(--soft);font-size:10px;font-weight:600}
 .balance{text-align:right;font-family:ui-monospace,monospace}
 .share{text-align:right;font-weight:850;color:var(--cyan)}
-.tag{display:inline-flex;padding:3px 6px;border-radius:6px;font-size:7px;font-weight:900;letter-spacing:.5px}
-.tag.contract{color:var(--yellow);border:1px solid rgba(255,209,102,.2);background:rgba(255,209,102,.05)}
-.tag.normal{color:#8fa5b8;border:1px solid #1b3043}
+.tag{display:inline-flex;padding:3px 6px;border-radius:6px;font-size:7px;font-weight:900;letter-spacing:.5px;margin-left:6px}
+.tag.scam{color:var(--red);border:1px solid rgba(255,91,124,.25);background:rgba(255,91,124,.08)}
+.tag.named{color:var(--green);border:1px solid rgba(67,243,162,.2);background:rgba(67,243,162,.06)}
 .notice{margin-top:9px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:9px;line-height:1.55}
 .links{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .link{padding:8px 10px;border:1px solid var(--line2);border-radius:9px;background:#071019;color:#b7c9d8;font-size:9px;font-weight:750}
@@ -122,12 +123,12 @@ a{text-decoration:none;color:inherit}
 
 <section class="hero">
   <h2 id="heroTitle">Know the <span>Token.</span><br>Verify the Lock.</h2>
-  <p id="heroDesc">Premium TON Jetton intelligence focused on identity, the first 10 indexed owners, concentration and DeDust market data. No fake lock verification. No fake percentages.</p>
+  <p id="heroDesc">Premium TON Jetton intelligence focused on identity, the first 10 indexed owners, concentration and market data. No fake lock verification. No fake percentages.</p>
   <div class="search">
     <input id="address" class="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Paste TON Jetton Master address…">
     <button id="scan" class="scan">ANALYZE ASSET</button>
   </div>
-  <div id="example" class="example">Example: TON Jetton Master address (EQ… / UQ…)</div>
+  <div id="example" class="example">Example: EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs (USDT)</div>
   <div id="status" class="status"><span class="dot"></span><span id="statusText">Ready.</span></div>
 </section>
 
@@ -164,15 +165,15 @@ a{text-decoration:none;color:inherit}
     <div class="card">
       <div class="label" id="supplyLabel">TOTAL SUPPLY</div>
       <div class="value" id="supply">--</div>
-      <div class="sub">DeDust source</div>
-      <span class="source">DEDUST</span>
+      <div class="sub" id="holdersCount">--</div>
+      <span class="source">TONAPI</span>
     </div>
 
     <div class="card">
-      <div class="label" id="marketLabel">DEDUST MARKET</div>
+      <div class="label" id="marketLabel">MARKET DATA</div>
       <div class="value" id="market">--</div>
-      <div class="sub" id="marketSub">Detected pool / market data</div>
-      <span class="source">DEDUST</span>
+      <div class="sub" id="marketSub">Price / 24h change</div>
+      <span class="source">TONAPI RATES</span>
     </div>
 
     <div class="card wide">
@@ -212,7 +213,7 @@ a{text-decoration:none;color:inherit}
         <span style="color:#71889d">Mintable</span><span></span><span></span><b id="mintable" style="text-align:right">--</b>
       </div>
       <div class="row" style="padding-left:0;padding-right:0;background:transparent">
-        <span style="color:#71889d">Data source</span><span></span><span></span><b style="text-align:right;color:var(--cyan)">DEDUST + TONAPI</b>
+        <span style="color:#71889d">Data source</span><span></span><span></span><b style="text-align:right;color:var(--cyan)">TONAPI</b>
       </div>
     </div>
   </div>
@@ -228,208 +229,359 @@ a{text-decoration:none;color:inherit}
 
   <div class="links">
     <a id="viewer" class="link" target="_blank" rel="noopener">Tonviewer ↗</a>
+    <a id="tonapi" class="link" target="_blank" rel="noopener">TONAPI ↗</a>
     <a id="dedust" class="link" target="_blank" rel="noopener">DeDust ↗</a>
   </div>
 </section>
 
 <footer class="footer">
   <div><b>NOVENTRA LOCK PREMIUM V4</b> · TON Intelligence</div>
-  <div id="footerText">DeDust market data · TONAPI top 10 owners · conservative lock verification</div>
+  <div id="footerText">TONAPI jetton data · top 10 owners · conservative lock verification</div>
 </footer>
 </div>
 
 <script>
-const DEDUST="https://api.dedust.io/v2";
-const TONAPI="https://tonapi.io/v2";
-const LANGKEY="noventra_lock_v4_lang";
-let lang=localStorage.getItem(LANGKEY)||"en";
+const TONAPI = "https://tonapi.io/v2";
+const LANGKEY = "noventra_lock_v4_lang";
+let lang = localStorage.getItem(LANGKEY) || "en";
 
-const $=id=>document.getElementById(id);
-const tr={
- en:{
-  sub:"LOCK INTELLIGENCE",title:'Know the <span>Token.</span><br>Verify the Lock.',
-  desc:"Premium TON Jetton intelligence focused on identity, the first 10 indexed owners, concentration and DeDust market data. No fake lock verification. No fake percentages.",
-  ph:"Paste TON Jetton Master address…",scan:"ANALYZE ASSET",ex:"Example: TON Jetton Master address (EQ… / UQ…)",
-  ready:"Ready.",reading:"Reading Noventra intelligence",connecting:"Connecting to data sources…",
-  token:"TOP 10 HOLDER INTELLIGENCE",tokenSub:"Combined share of the first 10 indexed owners.",
-  supply:"TOTAL SUPPLY",market:"DEDUST MARKET",marketSub:"Detected pool / market data",
-  score:"NOVENTRA HOLDER SCORE",owners:"TOP 10 OWNERS",owner:"OWNER",balance:"BALANCE",share:"SHARE",
-  details:"TOKEN DETAILS",lock:"LOCK STATUS",unverified:"UNVERIFIED",
-  lockDesc:"No recognized on-chain locker proof is claimed by this V4 build.",
-  lockNotice:"Noventra will never label a lock as verified from a token name, DEX listing or holder concentration alone.",
-  copied:"COPIED",failed:"Analysis failed.",enter:"Please enter a TON Jetton Master address.",
-  notFound:"Jetton data could not be found. Check the master address.",
-  qualityGood:"Top 10 owner data loaded. Percentages are calculated against the DeDust total supply.",
-  qualityPartial:"Only part of the indexed owner set was returned. Do not treat this as a complete holder distribution.",
-  qualityCheck:"The source data is inconsistent. Noventra has blocked unreliable concentration percentages.",
-  awaiting:"Awaiting analysis",scoreDesc:"The score uses only the available top-10 holder data. It is not a guarantee of safety.",
-  broad:"Holder concentration is relatively distributed.",medium:"Moderate holder concentration.",high:"High holder concentration.",
-  noMarket:"No DeDust market data found."
- },
- tr:{
-  sub:"KİLİT İSTİHBARATI",title:'Tokeni <span>Tanı.</span><br>Kilidi Doğrula.',
-  desc:"Kimlik, ilk 10 indekslenmiş sahip, yoğunluk ve DeDust piyasa verilerine odaklanan premium TON Jetton istihbaratı. Sahte kilit doğrulaması yok. Sahte yüzdeler yok.",
-  ph:"TON Jetton Master adresini yapıştır…",scan:"VARLIĞI ANALİZ ET",ex:"Örnek: TON Jetton Master adresi (EQ… / UQ…)",
-  ready:"Hazır.",reading:"Noventra istihbaratı okunuyor",connecting:"Veri kaynaklarına bağlanılıyor…",
-  token:"İLK 10 SAHİP İSTİHBARATI",tokenSub:"İlk 10 indekslenmiş sahibin toplam payı.",
-  supply:"TOPLAM ARZ",market:"DEDUST PİYASASI",marketSub:"Tespit edilen pool / piyasa verisi",
-  score:"NOVENTRA SAHİP SKORU",owners:"İLK 10 SAHİP",owner:"SAHİP",balance:"BAKİYE",share:"PAY",
-  details:"TOKEN DETAYLARI",lock:"KİLİT DURUMU",unverified:"DOĞRULANMADI",
-  lockDesc:"Bu V4 sürümü tanınmış bir zincir üstü locker kanıtı bulunmadan kilidi doğrulanmış kabul etmez.",
-  lockNotice:"Noventra token adı, DEX listesi veya holder yoğunluğuna bakarak bir kilidi doğrulanmış olarak işaretlemez.",
-  copied:"KOPYALANDI",failed:"Analiz başarısız.",enter:"Lütfen TON Jetton Master adresi girin.",
-  notFound:"Jetton verisi bulunamadı. Master adresini kontrol edin.",
-  qualityGood:"İlk 10 sahip verisi yüklendi. Yüzdeler DeDust toplam arzına göre hesaplandı.",
-  qualityPartial:"İndekslenmiş sahip listesinin yalnızca bir kısmı döndü. Bunu tam holder dağılımı olarak kabul etmeyin.",
-  qualityCheck:"Kaynak verileri tutarsız. Noventra güvenilmez yoğunluk yüzdelerini engelledi.",
-  awaiting:"Analiz bekleniyor",scoreDesc:"Skor yalnızca mevcut ilk 10 sahip verisini kullanır. Güvenlik garantisi değildir.",
-  broad:"Sahip yoğunluğu nispeten dağınık.",medium:"Orta düzey sahip yoğunluğu.",high:"Yüksek sahip yoğunluğu.",
-  noMarket:"DeDust piyasa verisi bulunamadı."
- }
+const $ = id => document.getElementById(id);
+
+const tr = {
+  en: {
+    sub: "LOCK INTELLIGENCE",
+    title: 'Know the <span>Token.</span><br>Verify the Lock.',
+    desc: "Premium TON Jetton intelligence focused on identity, the first 10 indexed owners, concentration and market data. No fake lock verification. No fake percentages.",
+    ph: "Paste TON Jetton Master address…",
+    scan: "ANALYZE ASSET",
+    ex: "Example: EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs (USDT)",
+    ready: "Ready.",
+    reading: "Reading Noventra intelligence",
+    connecting: "Connecting to data sources…",
+    token: "TOP 10 HOLDER INTELLIGENCE",
+    tokenSub: "Combined share of the first 10 indexed owners.",
+    supply: "TOTAL SUPPLY",
+    market: "MARKET DATA",
+    marketSub: "Price / 24h change",
+    score: "NOVENTRA HOLDER SCORE",
+    owners: "TOP 10 OWNERS",
+    owner: "OWNER",
+    balance: "BALANCE",
+    share: "SHARE",
+    details: "TOKEN DETAILS",
+    lock: "LOCK STATUS",
+    unverified: "UNVERIFIED",
+    lockDesc: "No recognized on-chain locker proof is claimed by this V4 build.",
+    lockNotice: "Noventra will never label a lock as verified from a token name, DEX listing or holder concentration alone.",
+    copied: "COPIED",
+    failed: "Analysis failed.",
+    enter: "Please enter a TON Jetton Master address.",
+    notFound: "Jetton data could not be found. Check the master address.",
+    qualityGood: "Top 10 owner data loaded. Percentages are calculated against total supply.",
+    qualityPartial: "Only part of the indexed owner set was returned. Do not treat this as a complete holder distribution.",
+    qualityCheck: "The source data is inconsistent. Noventra has blocked unreliable concentration percentages.",
+    awaiting: "Awaiting analysis",
+    scoreDesc: "The score uses only the available top-10 holder data. It is not a guarantee of safety.",
+    broad: "Holder concentration is relatively distributed.",
+    medium: "Moderate holder concentration.",
+    high: "High holder concentration.",
+    noMarket: "No market data found.",
+    footer: "TONAPI jetton data · top 10 owners · conservative lock verification",
+    holders: "holders",
+    yes: "YES",
+    no: "NO"
+  },
+  tr: {
+    sub: "KİLİT İSTİHBARATI",
+    title: 'Tokeni <span>Tanı.</span><br>Kilidi Doğrula.',
+    desc: "Kimlik, ilk 10 indekslenmiş sahip, yoğunluk ve piyasa verilerine odaklanan premium TON Jetton istihbaratı. Sahte kilit doğrulaması yok. Sahte yüzdeler yok.",
+    ph: "TON Jetton Master adresini yapıştır…",
+    scan: "VARLIĞI ANALİZ ET",
+    ex: "Örnek: EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs (USDT)",
+    ready: "Hazır.",
+    reading: "Noventra istihbaratı okunuyor",
+    connecting: "Veri kaynaklarına bağlanılıyor…",
+    token: "İLK 10 SAHİP İSTİHBARATI",
+    tokenSub: "İlk 10 indekslenmiş sahibin toplam payı.",
+    supply: "TOPLAM ARZ",
+    market: "PİYASA VERİSİ",
+    marketSub: "Fiyat / 24s değişim",
+    score: "NOVENTRA SAHİP SKORU",
+    owners: "İLK 10 SAHİP",
+    owner: "SAHİP",
+    balance: "BAKİYE",
+    share: "PAY",
+    details: "TOKEN DETAYLARI",
+    lock: "KİLİT DURUMU",
+    unverified: "DOĞRULANMADI",
+    lockDesc: "Bu V4 sürümü tanınmış bir zincir üstü locker kanıtı bulunmadan kilidi doğrulanmış kabul etmez.",
+    lockNotice: "Noventra token adı, DEX listesi veya holder yoğunluğuna bakarak bir kilidi doğrulanmış olarak işaretlemez.",
+    copied: "KOPYALANDI",
+    failed: "Analiz başarısız.",
+    enter: "Lütfen TON Jetton Master adresi girin.",
+    notFound: "Jetton verisi bulunamadı. Master adresini kontrol edin.",
+    qualityGood: "İlk 10 sahip verisi yüklendi. Yüzdeler toplam arza göre hesaplandı.",
+    qualityPartial: "İndekslenmiş sahip listesinin yalnızca bir kısmı döndü. Bunu tam holder dağılımı olarak kabul etmeyin.",
+    qualityCheck: "Kaynak verileri tutarsız. Noventra güvenilmez yoğunluk yüzdelerini engelledi.",
+    awaiting: "Analiz bekleniyor",
+    scoreDesc: "Skor yalnızca mevcut ilk 10 sahip verisini kullanır. Güvenlik garantisi değildir.",
+    broad: "Sahip yoğunluğu nispeten dağınık.",
+    medium: "Orta düzey sahip yoğunluğu.",
+    high: "Yüksek sahip yoğunluğu.",
+    noMarket: "Piyasa verisi bulunamadı.",
+    footer: "TONAPI jetton verisi · ilk 10 sahip · temkinli kilit doğrulaması",
+    holders: "sahip",
+    yes: "EVET",
+    no: "HAYIR"
+  }
 };
-function t(k){return tr[lang]?.[k]??tr.en[k]??k}
+
+function t(k){ return tr[lang]?.[k] ?? tr.en[k] ?? k }
+
 function applyLang(){
- $("brandSub").textContent=t("sub");$("heroTitle").innerHTML=t("title");$("heroDesc").textContent=t("desc");
- $("address").placeholder=t("ph");$("scan").textContent=t("scan");$("example").textContent=t("ex");
- $("loadTitle").textContent=t("reading");$("holderTitle").textContent=t("token");$("top10Sub").textContent=t("tokenSub");
- $("supplyLabel").textContent=t("supply");$("marketLabel").textContent=t("market");$("marketSub").textContent=t("marketSub");
- $("scoreLabel").textContent=t("score");$("ownersTitle").textContent=t("owners");$("ownerHead").textContent=t("owner");
- $("balHead").textContent=t("balance");$("shareHead").textContent=t("share");$("detailsTitle").textContent=t("details");
- $("lockTitle").textContent=t("lock");$("lockStatus").textContent=t("unverified");$("lockDesc").textContent=t("lockDesc");
- $("lockNotice").textContent=t("lockNotice");$("footerText").textContent=t("footer");
- $("lang").textContent=lang==="en"?"TR":"EN";document.documentElement.lang=lang;
+  $("brandSub").textContent = t("sub");
+  $("heroTitle").innerHTML = t("title");
+  $("heroDesc").textContent = t("desc");
+  $("address").placeholder = t("ph");
+  $("scan").textContent = t("scan");
+  $("example").textContent = t("ex");
+  $("loadTitle").textContent = t("reading");
+  $("holderTitle").textContent = t("token");
+  $("top10Sub").textContent = t("tokenSub");
+  $("supplyLabel").textContent = t("supply");
+  $("marketLabel").textContent = t("market");
+  $("marketSub").textContent = t("marketSub");
+  $("scoreLabel").textContent = t("score");
+  $("ownersTitle").textContent = t("owners");
+  $("ownerHead").textContent = t("owner");
+  $("balHead").textContent = t("balance");
+  $("shareHead").textContent = t("share");
+  $("detailsTitle").textContent = t("details");
+  $("lockTitle").textContent = t("lock");
+  $("lockStatus").textContent = t("unverified");
+  $("lockDesc").textContent = t("lockDesc");
+  $("lockNotice").textContent = t("lockNotice");
+  $("footerText").textContent = t("footer");
+  $("lang").textContent = lang === "en" ? "TR" : "EN";
+  document.documentElement.lang = lang;
 }
-$("lang").onclick=()=>{lang=lang==="en"?"tr":"en";localStorage.setItem(LANGKEY,lang);applyLang();if(window.lastData)render(window.lastData)};
-function status(x){$("status").classList.add("show");$("statusText").textContent=x}
-function loading(x){$("loading").classList.add("show");$("loadText").textContent=x}
-function stop(){ $("loading").classList.remove("show") }
-function error(x){$("error").textContent=x;$("error").classList.add("show")}
-function clear(){ $("error").classList.remove("show");$("error").textContent="" }
-async function get(url){
- const c=new AbortController();const tm=setTimeout(()=>c.abort(),15000);
- try{const r=await fetch(url,{signal:c.signal,headers:{accept:"application/json"}});
-   if(!r.ok)throw new Error("HTTP "+r.status);
-   return await r.json();
- }finally{clearTimeout(tm)}
-}
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function short(a){if(!a)return"--";return a.length>24?a.slice(0,10)+"…"+a.slice(-10):a}
-function rawBig(v){try{return BigInt(String(v??"0"))}catch{return 0n}}
-function formatAmount(raw,dec=9){
- const n=rawBig(raw),d=Math.max(0,Math.min(18,Number(dec)||9)),base=10n**BigInt(d),w=n/base,f=n%base;
- if(!f)return Number(w).toLocaleString("en-US");
- let fs=f.toString().padStart(d,"0").replace(/0+$/,"").slice(0,6);
- return Number(w).toLocaleString("en-US")+"."+fs;
-}
-function percent(raw,total){
- const a=rawBig(raw),b=rawBig(total);
- if(!b||a<0n||a>b)return null;
- return Number(a*100000n/b)/1000;
-}
-function pct(v){return v==null?"CHECK":(v<0.001?"<0.001":v.toFixed(3))+"%"}
-function first(obj,keys,def=""){for(const k of keys){if(obj?.[k]!=null&&obj[k]!=="")return obj[k]}return def}
 
-async function loadDeDust(address){
- const [meta,supply]=await Promise.all([
-   get(DEDUST+"/jettons/"+encodeURIComponent(address)+"/metadata"),
-   get(DEDUST+"/jettons/"+encodeURIComponent(address)+"/total-supply")
- ]);
- return {meta,supply};
-}
-async function loadTop10(address){
- const d=await get(TONAPI+"/jettons/"+encodeURIComponent(address)+"/holders?limit=10&offset=0");
- const rows=d?.addresses||d?.holders||d?.items||[];
- return Array.isArray(rows)?rows.slice(0,10):[];
-}
-function parseMeta(meta){
- const x=meta?.jetton||meta?.asset||meta||{};
- return {
-   name:first(x,["name","title"],"TON JETTON"),
-   symbol:first(x,["symbol","ticker"],"JETTON"),
-   decimals:Number(first(x,["decimals"],9))||9,
-   image:first(x,["image","icon","logo"],""),
-   description:first(x,["description"],"")
- };
-}
-function parseSupply(s){
- return first(s,["total_supply","totalSupply","supply","amount"],s?.data?.total_supply??"0");
-}
-function normalizeOwners(rows){
- return rows.map(x=>{
-   const owner=first(x,["address","owner","account_address"],"");
-   const balance=first(x,["balance","amount"],"0");
-   return {owner,balance};
- }).filter(x=>x.owner);
-}
-function scoreOwners(items,total){
- const shares=items.map(x=>percent(x.balance,total)).filter(v=>v!=null);
- if(!shares.length)return{score:null,title:t("awaiting"),desc:t("scoreDesc")};
- const top10=shares.reduce((a,b)=>a+b,0);
- let score=100;
- if(top10>50)score-=45;else if(top10>35)score-=30;else if(top10>20)score-=15;
- if(shares[0]>25)score-=25;else if(shares[0]>15)score-=15;else if(shares[0]>8)score-=8;
- score=Math.max(0,Math.min(100,Math.round(score)));
- const title=top10<20?t("broad"):top10<35?t("medium"):t("high");
- return{score,title,desc:t("scoreDesc")};
-}
-function render(data){
- window.lastData=data;
- const {meta,total,owners,market}=data;
- $("name").textContent=meta.name;$("symbol").textContent=meta.symbol;$("master").textContent=data.address;
- $("supply").textContent=formatAmount(total,meta.decimals);
- $("market").textContent=market||t("noMarket");
- $("decimals").textContent=meta.decimals;
- $("admin").textContent=data.admin||"—";
- $("mintable").textContent=data.mintable==null?"—":(data.mintable?(lang==="en"?"YES":"EVET"):(lang==="en"?"NO":"HAYIR"));
- $("viewer").href="https://tonviewer.com/"+encodeURIComponent(data.address);
- $("dedust").href="https://dedust.io/jetton/"+encodeURIComponent(data.address);
- if(meta.image)$("icon").src=meta.image;
- else $("icon").src="data:image/svg+xml,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#0b1723"/><text x="50" y="62" text-anchor="middle" font-size="38" font-family="Arial" font-weight="700" fill="#42dcff">N</text></svg>`);
- const valid=rawBig(total)>0n;
- const shares=owners.map(x=>percent(x.balance,total));
- const bad=shares.some(v=>v==null);
- const top10=bad?null:shares.reduce((a,b)=>a+b,0);
- $("top10").textContent=valid&&!bad?pct(top10):"CHECK";
- $("ownerMeta").textContent=owners.length+"/10 indexed";
- $("ownerRows").innerHTML=owners.map((x,i)=>{
-   const sh=percent(x.balance,total);
-   return `<div class="row"><span>${i+1}</span><code>${esc(short(x.owner))}</code><span class="balance">${esc(formatAmount(x.balance,meta.decimals))}</span><span class="share">${pct(sh)}</span></div>`;
- }).join("")||`<div class="row"><span>—</span><code>${esc(t("notFound"))}</code><span></span><span></span></div>`;
- let q=t("qualityGood");
- if(owners.length<10)q=t("qualityPartial");
- if(!valid||bad)q=t("qualityCheck");
- $("quality").textContent=q;
- const sc=scoreOwners(owners,total);
- $("score").textContent=sc.score==null?"--":sc.score;
- $("ring").style.setProperty("--score",(sc.score??0)*3.6+"deg");
- $("scoreTitle").textContent=sc.title;$("scoreDesc").textContent=sc.desc;
- $("result").classList.add("show");
-}
-async function scan(){
- clear();$("result").classList.remove("show");
- const address=$("address").value.trim();
- if(!address){error(t("enter"));return}
- $("scan").disabled=true;
- try{
-   status(t("connecting"));loading(t("connecting"));
-   const dd=await loadDeDust(address);
-   loading("Reading top 10 owners…");
-   const owners=normalizeOwners(await loadTop10(address));
-   const meta=parseMeta(dd.meta);
-   const total=parseSupply(dd.supply);
-   render({address,meta,total:rawBig(total).toString(),owners,market:null,admin:null,mintable:null});
-   status("Analysis complete.");
- }catch(e){
-   console.error(e);
-   error(e?.message||t("failed"));status(t("failed"));
- }finally{stop();$("scan").disabled=false}
-}
-$("scan").onclick=scan;
-$("address").onkeydown=e=>{if(e.key==="Enter")scan()};
-$("copy").onclick=async()=>{
- try{await navigator.clipboard.writeText($("master").textContent);$("copy").textContent=t("copied");setTimeout(()=>$("copy").textContent="COPY",1200)}catch{}
+$("lang").onclick = () => {
+  lang = lang === "en" ? "tr" : "en";
+  localStorage.setItem(LANGKEY, lang);
+  applyLang();
+  if (window.lastData) render(window.lastData);
 };
-applyLang();status(t("ready"));
+
+function status(x){ $("status").classList.add("show"); $("statusText").textContent = x; }
+function loading(x){ $("loading").classList.add("show"); $("loadText").textContent = x; }
+function stop(){ $("loading").classList.remove("show"); }
+function error(x){ $("error").textContent = x; $("error").classList.add("show"); }
+function clear(){ $("error").classList.remove("show"); $("error").textContent = ""; }
+
+async function get(url){
+  const c = new AbortController();
+  const tm = setTimeout(() => c.abort(), 18000);
+  try {
+    const r = await fetch(url, { signal: c.signal, headers: { accept: "application/json" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(tm);
+  }
+}
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+function short(a){ if (!a) return "--"; return a.length > 22 ? a.slice(0, 8) + "…" + a.slice(-8) : a; }
+function rawBig(v){ try { return BigInt(String(v ?? "0")); } catch { return 0n; } }
+
+function formatAmount(raw, dec = 9){
+  const n = rawBig(raw);
+  const d = Math.max(0, Math.min(18, Number(dec) || 9));
+  const base = 10n ** BigInt(d);
+  const w = n / base;
+  const f = n % base;
+  if (!f) return Number(w).toLocaleString("en-US");
+  let fs = f.toString().padStart(d, "0").replace(/0+$/, "").slice(0, 6);
+  return Number(w).toLocaleString("en-US") + "." + fs;
+}
+
+function percent(raw, total){
+  const a = rawBig(raw), b = rawBig(total);
+  if (!b || a < 0n || a > b) return null;
+  return Number(a * 100000n / b) / 1000;
+}
+
+function pct(v){ return v == null ? "CHECK" : (v < 0.001 ? "<0.001" : v.toFixed(3)) + "%"; }
+
+function scoreOwners(items, total){
+  const shares = items.map(x => percent(x.balance, total)).filter(v => v != null);
+  if (!shares.length) return { score: null, title: t("awaiting"), desc: t("scoreDesc") };
+  const top10 = shares.reduce((a, b) => a + b, 0);
+  let score = 100;
+  if (top10 > 50) score -= 45;
+  else if (top10 > 35) score -= 30;
+  else if (top10 > 20) score -= 15;
+  if (shares[0] > 25) score -= 25;
+  else if (shares[0] > 15) score -= 15;
+  else if (shares[0] > 8) score -= 8;
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const title = top10 < 20 ? t("broad") : top10 < 35 ? t("medium") : t("high");
+  return { score, title, desc: t("scoreDesc") };
+}
+
+function normalizeOwners(rows){
+  return (rows || []).map(x => {
+    const ownerAddr = x?.owner?.address || x?.owner || x?.address || "";
+    const name = x?.owner?.name || "";
+    const isScam = !!x?.owner?.is_scam;
+    const balance = x?.balance || "0";
+    return { owner: ownerAddr, name, isScam, balance };
+  }).filter(x => x.owner);
+}
+
+function render(data){
+  window.lastData = data;
+  const { meta, total, owners, market, admin, mintable, holdersCount } = data;
+
+  $("name").textContent = meta.name || "Unknown Jetton";
+  $("symbol").textContent = meta.symbol || "JETTON";
+  $("master").textContent = data.address;
+  $("supply").textContent = formatAmount(total, meta.decimals);
+  $("holdersCount").textContent = holdersCount ? holdersCount.toLocaleString("en-US") + " " + t("holders") : "--";
+  $("market").textContent = market?.price || t("noMarket");
+  $("marketSub").textContent = market?.change || t("marketSub");
+  $("decimals").textContent = meta.decimals ?? "--";
+  $("admin").textContent = admin ? short(admin) : "—";
+  $("mintable").textContent = mintable == null ? "—" : (mintable ? t("yes") : t("no"));
+
+  $("viewer").href = "https://tonviewer.com/" + encodeURIComponent(data.address);
+  $("tonapi").href = "https://tonapi.io/jetton/" + encodeURIComponent(data.address);
+  $("dedust").href = "https://dedust.io/jetton/" + encodeURIComponent(data.address);
+
+  if (meta.image) {
+    $("icon").src = meta.image;
+  } else {
+    $("icon").src = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#0b1723"/><text x="50" y="62" text-anchor="middle" font-size="38" font-family="Arial" font-weight="700" fill="#42dcff">N</text></svg>`);
+  }
+
+  const valid = rawBig(total) > 0n;
+  const shares = owners.map(x => percent(x.balance, total));
+  const bad = shares.some(v => v == null);
+  const top10 = bad ? null : shares.reduce((a, b) => a + b, 0);
+  $("top10").textContent = valid && !bad ? pct(top10) : "CHECK";
+  $("ownerMeta").textContent = owners.length + "/10 indexed";
+
+  $("ownerRows").innerHTML = owners.map((x, i) => {
+    const sh = percent(x.balance, total);
+    const display = x.name
+      ? `<span class="owner-name">${esc(x.name)}</span>${x.isScam ? '<span class="tag scam">SCAM</span>' : ''}`
+      : `<code>${esc(short(x.owner))}</code>`;
+    return `<div class="row"><span>${i + 1}</span><div>${display}</div><span class="balance">${esc(formatAmount(x.balance, meta.decimals))}</span><span class="share">${pct(sh)}</span></div>`;
+  }).join("") || `<div class="row"><span>—</span><code>${esc(t("notFound"))}</code><span></span><span></span></div>`;
+
+  let q = t("qualityGood");
+  if (owners.length < 10) q = t("qualityPartial");
+  if (!valid || bad) q = t("qualityCheck");
+  $("quality").textContent = q;
+
+  const sc = scoreOwners(owners, total);
+  $("score").textContent = sc.score == null ? "--" : sc.score;
+  $("ring").style.setProperty("--score", (sc.score ?? 0) * 3.6 + "deg");
+  $("scoreTitle").textContent = sc.title;
+  $("scoreDesc").textContent = sc.desc;
+
+  $("result").classList.add("show");
+}
+
+async function scan(){
+  clear();
+  $("result").classList.remove("show");
+  const address = $("address").value.trim();
+  if (!address) { error(t("enter")); return; }
+
+  $("scan").disabled = true;
+  try {
+    status(t("connecting"));
+    loading(t("connecting"));
+
+    // 1. Jetton metadata + supply + admin + mintable
+    loading("Reading jetton data…");
+    const info = await get(`${TONAPI}/jettons/${encodeURIComponent(address)}`);
+
+    const meta = {
+      name: info?.metadata?.name || info?.name || "TON JETTON",
+      symbol: info?.metadata?.symbol || "JETTON",
+      decimals: Number(info?.metadata?.decimals || 9) || 9,
+      image: info?.metadata?.image || info?.preview || ""
+    };
+    const total = info?.total_supply || "0";
+    const admin = info?.admin?.address || null;
+    const mintable = typeof info?.mintable === "boolean" ? info.mintable : null;
+    const holdersCount = info?.holders_count || null;
+
+    // 2. Top 10 holders
+    loading("Reading top 10 owners…");
+    let owners = [];
+    try {
+      const holdersData = await get(`${TONAPI}/jettons/${encodeURIComponent(address)}/holders?limit=10&offset=0`);
+      owners = normalizeOwners(holdersData?.addresses || []);
+    } catch (e) {
+      console.warn("Holders fetch failed:", e);
+    }
+
+    // 3. Market / price
+    loading("Reading market data…");
+    let market = null;
+    try {
+      const rates = await get(`${TONAPI}/rates?tokens=${encodeURIComponent(address)}&currencies=usd`);
+      const rate = rates?.rates?.[address] || rates?.rates?.[Object.keys(rates?.rates || {})[0]];
+      if (rate?.prices?.USD != null) {
+        const price = Number(rate.prices.USD);
+        const change = rate.diff_24h?.USD || "";
+        market = {
+          price: "$" + (price < 0.01 ? price.toFixed(6) : price.toLocaleString("en-US", { maximumFractionDigits: 4 })),
+          change: change ? "24h: " + change : ""
+        };
+      }
+    } catch (e) {
+      console.warn("Rates fetch failed:", e);
+    }
+
+    render({
+      address,
+      meta,
+      total: String(total),
+      owners,
+      market,
+      admin,
+      mintable,
+      holdersCount
+    });
+
+    status("Analysis complete.");
+  } catch (e) {
+    console.error(e);
+    error(e?.message || t("failed"));
+    status(t("failed"));
+  } finally {
+    stop();
+    $("scan").disabled = false;
+  }
+}
+
+$("scan").onclick = scan;
+$("address").onkeydown = e => { if (e.key === "Enter") scan(); };
+$("copy").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("master").textContent);
+    $("copy").textContent = t("copied");
+    setTimeout(() => $("copy").textContent = "COPY", 1200);
+  } catch {}
+};
+
+applyLang();
+status(t("ready"));
 </script>
 </body>
 </html>
